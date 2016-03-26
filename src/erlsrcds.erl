@@ -14,3 +14,19 @@
 -define(A2S_RULES_REPLY, <<"E">>).
 -define(CHALLENGE, -1).
 -define(S2C_CHALLENGE, <<"A">>).
+
+
+
+parse_packet(Packet) when is_binary(Packet) ->
+
+    case Packet of
+        <<
+            Header:32,
+            ID:32,
+            Total:8,
+            Number:8,
+            Size:16,
+            Payload/binary
+        >> ->
+            derp
+    end.
