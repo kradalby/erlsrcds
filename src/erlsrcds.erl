@@ -28,5 +28,12 @@ parse_packet(Packet) when is_binary(Packet) ->
             Size:16,
             Payload/binary
         >> ->
-            derp
+            io:format("Received a SRCDS package");
+        <<
+            Header:32,
+            ID:32,
+            PacketNumber:8,
+            Payload/binary
+        >> ->
+            io:format("Received a GoldSrc package")
     end.
