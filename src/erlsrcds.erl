@@ -26,11 +26,16 @@
     {active, false}
 ]).
 
+%% Read the and return the next string from
+%% the payload.
 read_string(Payload) ->
     [String, NewPayload] = binary:split(Payload, [<<?STRING_TERMINATION>>], []),
     io:format("Reading string: ~s~n", [String]),
     {binary:bin_to_list(String), NewPayload}.
 
+%% parse the packet header and
+%% forward the payload to the
+%% correct parse function.
 parse_packet(Packet) when is_binary(Packet) ->
 
     case Packet of
@@ -57,6 +62,7 @@ parse_packet(Packet) when is_binary(Packet) ->
             Payload/binary
         >> ->
             io:format("Got players: ~s~n", [Payload]);
+
         X->
             io:format("Wildcard got this: ~s~n", [X])
     end.
