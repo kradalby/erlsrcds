@@ -1,8 +1,8 @@
 -module(erlsrcds).
 
 -export([
-    test_info/0,
-    test_player/0
+    info/2,
+    player/2
 ]).
 
 -define(PACKETSIZE, 1400).
@@ -31,7 +31,7 @@
 -spec read_string(Payload::binary()) -> {[byte()], binary()}.
 read_string(Payload) ->
     [String, NewPayload] = binary:split(Payload, [<<?STRING_TERMINATION>>], []),
-    io:format("Reading string: ~s~n", [String]),
+    io:format("Reading string: ~p~n", [String]),
     {binary:bin_to_list(String), NewPayload}.
 
 %% parse the packet header and
@@ -46,26 +46,28 @@ parse_packet(Packet) when is_binary(Packet) ->
             _Protocol:8,
             Payload/binary
         >> ->
-            io:format("Correct: ~s~n", [Payload]),
+            io:format("Correct: ~p~n", [Payload]),
             parse_info_payload(Payload);
 
         <<
             ?WHOLE,
             ?S2C_CHALLENGE,
-            Challenge:32
+            Challenge:32/signed,
+            Payload/binary
         >> ->
             io:format("Got PLAYER challenge~n"),
-            Challenge;
+            io:format("~p~n", [Payload]),
+            #{"Challenge" => Challenge};
 
         <<
             ?WHOLE,
             ?A2S_PLAYER_REPLY,
             Payload/binary
         >> ->
-            io:format("Got players: ~s~n", [Payload]);
+            io:format("Got players: ~p~n", [Payload]);
 
         X->
-            io:format("Wildcard got this: ~s~n", [X])
+            io:format("Wildcard got this: ~p~n", [X])
     end.
 
 -spec parse_info_payload(Payload::binary()) -> #{}.
@@ -132,30 +134,38 @@ create_request_package(player, Challenge) ->
     <<
         ?CHALLENGE,
         ?A2S_PLAYER,
-        Challenge,
+        Challenge:32/signed,
         ?STRING_TERMINATION
     >>.
 
+-spec info(byte(), number()) -> #{}.
+info(Address, Port) ->
+    {ok, AddressTuple} = inet_parse:address(Address),
+    info_internal(AddressTuple, Port).
 
-test_info() ->
+-spec info_internal({number(),number(),number(),number()}, number()) -> #{}.
+info_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(info),
-    io:format("~s~n", [Payload]),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
-    ok = gen_udp:send(Socket, {193, 202, 115, 74}, 27115, Payload),
+    ok = gen_udp:send(Socket, Address, Port, Payload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
-    %io:format("~s ~s~n", [Address, Port]),
     parse_packet(Packet).
 
-test_player() ->
+-spec player(byte(), number()) -> #{}.
+player(Address, Port) ->
+    {ok, AddressTuple} = inet_parse:address(Address),
+    player_internal(AddressTuple, Port).
+
+-spec player_internal({number(),number(),number(),number()}, number()) -> #{}.
+player_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(player),
-    io:format("~s~n", [Payload]),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
-    ok = gen_udp:send(Socket, {193, 202, 115, 74}, 27115, Payload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
-    %io:format("~s ~s~n", [Address, Port]),
-    Challenge = parse_packet(Packet),
-    Payload2 = create_request_package(player, Challenge),
-    io:format("~s~n", [Payload2]),
-    ok = gen_udp:send(Socket, {193, 202, 115, 74}, 27115, Payload),
+    ok = gen_udp:send(Socket, Address, Port, Payload),
+    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    io:format("~p~n", [ChallengePacket]),
+    Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
+    io:format("Challenge: ~p~n", Challenge),
+    ChallengePayload = create_request_package(player, Challenge),
+    ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
     parse_packet(Packet).
