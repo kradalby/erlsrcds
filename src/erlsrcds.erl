@@ -64,7 +64,7 @@ parse_packet(Packet) when is_binary(Packet) ->
             ?A2S_PLAYER_REPLY,
             Payload/binary
         >> ->
-            io:format("Got players: ~p~n", [Payload]);
+            io:format("Got players: ~s~n", [Payload]);
 
         X->
             io:format("Wildcard got this: ~p~n", [X])
@@ -134,7 +134,7 @@ create_request_package(player, Challenge) ->
     <<
         ?CHALLENGE,
         ?A2S_PLAYER,
-        Challenge:32/signed,
+        Challenge:32,
         ?STRING_TERMINATION
     >>.
 
@@ -164,7 +164,7 @@ player_internal(Address = {_,_,_,_}, Port) ->
     {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
     io:format("~p~n", [ChallengePacket]),
     Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
-    io:format("Challenge: ~p~n", Challenge),
+    io:format("Challenge: ~p~n", [Challenge]),
     ChallengePayload = create_request_package(player, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
