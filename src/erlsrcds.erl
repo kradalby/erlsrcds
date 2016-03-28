@@ -28,6 +28,7 @@
 
 %% Read the and return the next string from
 %% the payload.
+-spec read_string(Payload::binary()) -> {[byte()], binary()}.
 read_string(Payload) ->
     [String, NewPayload] = binary:split(Payload, [<<?STRING_TERMINATION>>], []),
     io:format("Reading string: ~s~n", [String]),
@@ -36,8 +37,8 @@ read_string(Payload) ->
 %% parse the packet header and
 %% forward the payload to the
 %% correct parse function.
+-spec parse_packet(Payload::binary()) -> #{}.
 parse_packet(Packet) when is_binary(Packet) ->
-
     case Packet of
         <<
             ?WHOLE,
@@ -67,6 +68,7 @@ parse_packet(Packet) when is_binary(Packet) ->
             io:format("Wildcard got this: ~s~n", [X])
     end.
 
+-spec parse_info_payload(Payload::binary()) -> #{}.
 parse_info_payload(Payload) when is_binary(Payload) ->
     {Name, Payload1} = read_string(Payload),
     {Map, Payload2} = read_string(Payload1),
@@ -102,6 +104,7 @@ parse_info_payload(Payload) when is_binary(Payload) ->
         _ -> Result
     end.
 
+-spec create_request_package('info' | 'player' | 'rules') -> binary().
 create_request_package(info) ->
     <<
         ?CHALLENGE,
@@ -119,10 +122,12 @@ create_request_package(player) ->
 create_request_package(rules) ->
     <<
         ?CHALLENGE,
-        ?A2S_INFO,
+        ?A2S_RULES,
         ?A2S_INFO_STRING,
         ?STRING_TERMINATION
     >>.
+
+-spec create_request_package('player', integer()) -> binary().
 create_request_package(player, Challenge) ->
     <<
         ?CHALLENGE,
@@ -130,7 +135,6 @@ create_request_package(player, Challenge) ->
         Challenge,
         ?STRING_TERMINATION
     >>.
-
 
 
 test_info() ->

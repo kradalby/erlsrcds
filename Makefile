@@ -5,4 +5,7 @@ shell:
 clean:
 	rm -f ebin/*.beam
 
+dialyzer:
+	dialyzer src/*
+
 .: shell
