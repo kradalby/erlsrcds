@@ -65,12 +65,39 @@ parse_packet(Packet) when is_binary(Packet) ->
         >> ->
             parse_player_payload(Payload, Players, []);
 
+
+        % Match different Rules scenarios
+        %% Matches: Rules in one packet
         <<
             ?WHOLE,
             ?A2S_RULES_REPLY,
             Rules:2/little-signed-integer-unit:8,
             Payload/binary
         >> ->
+            parse_rules_payload(Payload, Rules, #{});
+
+        %% Matches: Rules in one packet w/o challenge?
+        <<
+            ?SPLIT,
+            ?A2S_RULES_REPLY,
+            Rules:2/little-signed-integer-unit:8,
+            Payload/binary
+        >> ->
+            parse_rules_payload(Payload, Rules, #{});
+
+        %% Matches: Rules in multiple packets
+        <<
+            ?SPLIT,
+            ID:2/little-signed-integer-unit:8,
+            Total:8,
+            Number:8,
+            Size:2/little-signed-integer-unit:8,
+
+            ?A2S_RULES_REPLY,
+            Rules:2/little-signed-integer-unit:8,
+            Payload/binary
+        >> ->
+            io:format("~p~n~p~n~p~n~p~n", [ID, Total, Number, Size]),
             parse_rules_payload(Payload, Rules, #{});
 
         X->
