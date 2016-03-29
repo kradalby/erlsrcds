@@ -105,7 +105,7 @@ parse_packet(Packet) when is_binary(Packet) ->
             io:format("ID: ~p~n Total: ~p~n Number: ~p~n Size: ~p~n", [ID, Total, Number, Size]),
             parse_rules_payload(Payload, Rules, #{});
 
-        X->
+        X ->
             io:format("Wildcard got this: ~p~n", [X])
     end.
 
