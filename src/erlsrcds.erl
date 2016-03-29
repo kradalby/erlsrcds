@@ -37,7 +37,7 @@ read_string(Payload) ->
 %% parse the packet header and
 %% forward the payload to the
 %% correct parse function.
--spec parse_packet(Payload::binary()) -> #{}.
+-spec parse_packet(Payload::binary()) -> #{} | [].
 parse_packet(Packet) when is_binary(Packet) ->
     case Packet of
         <<
@@ -62,9 +62,10 @@ parse_packet(Packet) when is_binary(Packet) ->
         <<
             ?WHOLE,
             ?A2S_PLAYER_REPLY,
+            Players:8,
             Payload/binary
         >> ->
-            io:format("Got players: ~s~n", [Payload]);
+            parse_player_payload(Payload, Players, []);
 
         X->
             io:format("Wildcard got this: ~p~n", [X])
@@ -105,6 +106,22 @@ parse_info_payload(Payload) when is_binary(Payload) ->
             maps:put("edf", EDF, Result)))))))));
         _ -> Result
     end.
+
+-spec parse_player_payload(binary(), number(), []) -> [].
+parse_player_payload(Payload, 0, State) ->
+    State;
+parse_player_payload(Payload, Number, State) when Number > 0 ->
+    <<Index:8, Payload1/binary>> = Payload,
+    {Name, Payload2} = read_string(Payload1),
+    % <<Score:32, Payload3>> = Payload2,
+    % <<Duration:32/float, Payload4>> = Payload3,
+    Player = #{
+        "index" => Index,
+        "name" => Name
+        % "kill" => Score,
+        % "time" => Duration
+    },
+    parse_player_payload(Payload2, Number - 1, [Player, State]).
 
 -spec create_request_package('info' | 'player' | 'rules') -> binary().
 create_request_package(info) ->
