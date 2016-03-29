@@ -70,44 +70,45 @@ parse_packet(Packet) when is_binary(Packet) ->
         >> ->
             parse_player_payload(Payload, Players, []);
 
-
-        % Match different Rules scenarios
-        %% Matches: Rules in one packet
         <<
             ?WHOLE,
             ?A2S_RULES_REPLY,
             Rules:2/little-signed-integer-unit:8,
             Payload/binary
         >> ->
-            parse_rules_payload(Payload, Rules, #{});
-
-        %% Matches: Rules in one packet w/o challenge?
-        <<
-            ?SPLIT,
-            ?A2S_RULES_REPLY,
-            Rules:2/little-signed-integer-unit:8,
-            Payload/binary
-        >> ->
-            parse_rules_payload(Payload, Rules, #{});
-
-        %% Matches: Rules in multiple packets
-        <<
-            ?SPLIT,
-            ID:4/little-signed-integer-unit:8,
-            Total:8,
-            Number:8,
-            Size:2/little-signed-integer-unit:8,
-            ?WHOLE,
-            ?A2S_RULES_REPLY,
-            Rules:2/little-signed-integer-unit:8,
-            Payload/binary
-        >> ->
-            io:format("ID: ~p~n Total: ~p~n Number: ~p~n Size: ~p~n", [ID, Total, Number, Size]),
             parse_rules_payload(Payload, Rules, #{});
 
         X ->
             io:format("Wildcard got this: ~p~n", [X])
     end.
+
+-spec check_for_split_package(Packet::binary()) -> number().
+check_for_split_package(Packet) ->
+    case Packet of
+        <<
+            ?SPLIT,
+            _ID:4/little-signed-integer-unit:8,
+            Total:8,
+            _Number:8,
+            _Size:2/little-signed-integer-unit:8,
+            _Payload/binary
+        >> ->
+            Total;
+        _ -> 0
+    end.
+
+-spec strip_split_packet_header(Packet::binary()) -> binary().
+strip_split_packet_header(Packet) ->
+        <<
+            ?SPLIT,
+            _ID:4/little-signed-integer-unit:8,
+            _Total:8,
+            _Number:8,
+            _Size:2/little-signed-integer-unit:8,
+            Payload/binary
+        >> = Packet,
+        Payload.
+
 
 -spec parse_info_payload(Payload::binary()) -> #{}.
 parse_info_payload(Payload) when is_binary(Payload) ->
@@ -256,4 +257,24 @@ rules_internal(Address = {_,_,_,_}, Port) ->
     ChallengePayload = create_request_package(rules, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
-    parse_packet(Packet).
+    case check_for_split_package(Packet) of
+        0 -> parse_packet(Packet);
+        N ->
+            io:format("There is: ~p packages~n", [N]),
+            Map = parse_packet(strip_split_packet_header(Packet)),
+            receive_and_parse_split_rules(N-1, Socket, Map)
+    end.
+
+-spec receive_and_parse_split_rules(number(), any(), #{}) -> #{}.
+receive_and_parse_split_rules(0, _Socket, State) -> State;
+receive_and_parse_split_rules(Number, Socket, State) ->
+    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    io:format("Received: ~s~n", [Packet]),
+    StrippedPacket = strip_split_packet_header(Packet),
+    io:format("Stripped: ~s~n", [StrippedPacket]),
+    % Not optimal, but works, the match with an empty binary
+    % will happen before a 1000 recursive calls.
+    % Valve does not include a proper Rules header on other
+    % packages than the first one?
+    NewState = maps:merge(State, parse_rules_payload(StrippedPacket, 1000, #{})),
+    receive_and_parse_split_rules(Number - 1, Socket, NewState).
