@@ -84,7 +84,7 @@ parse_info_payload(Payload) when is_binary(Payload) ->
              maps:new())))),
     _Result1 = case Payload4 of
         <<
-            ID:16,
+            ID:2/little-signed-integer-unit:8,
             Players:8,
             MaxPlayers:8,
             Bots:8,
@@ -113,15 +113,15 @@ parse_player_payload(Payload, 0, State) ->
 parse_player_payload(Payload, Number, State) when Number > 0 ->
     <<Index:8, Payload1/binary>> = Payload,
     {Name, Payload2} = read_string(Payload1),
-    % <<Score:32, Payload3>> = Payload2,
-    % <<Duration:32/float, Payload4>> = Payload3,
+    <<Score:4/little-signed-integer-unit:8, Payload3/binary>> = Payload2,
+    <<Duration:4/little-signed-float-unit:8, Payload4/binary>> = Payload3,
     Player = #{
         "index" => Index,
-        "name" => Name
-        % "kill" => Score,
-        % "time" => Duration
+        "name" => Name,
+        "kill" => Score,
+        "time" => Duration
     },
-    parse_player_payload(Payload2, Number - 1, [Player, State]).
+    parse_player_payload(Payload4, Number - 1, [Player|State]).
 
 -spec create_request_package('info' | 'player' | 'rules') -> binary().
 create_request_package(info) ->
