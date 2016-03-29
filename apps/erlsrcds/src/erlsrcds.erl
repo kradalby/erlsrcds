@@ -247,7 +247,7 @@ player_internal(Address = {_,_,_,_}, Port) ->
             ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
             {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
             parse_packet(Packet);
-        {error, timout} ->
+        {error, timeout} ->
             {error, timeout}
     end.
 
