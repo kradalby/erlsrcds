@@ -1,6 +1,8 @@
 # erlsrcds
 Library for performing server queries towards Source Dedicated Servers.
 
+The library is implemented based on the information given here: [Server queries](https://developer.valvesoftware.com/wiki/Server_queries). Note that it is implemented with Counter-Strike and Team Fortress 2 in mind, so I am not sure about non-valve Source enginge games.
+
 This project was created for educational purposes, but should function properly.
 If there are parts of the code which has not optimal implementations, please let me know :). I have tested it on Counter-Strike: Global Offensive and Counter-Strike: Source.
 
