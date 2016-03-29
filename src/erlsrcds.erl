@@ -7,8 +7,9 @@
 ]).
 
 -define(PACKETSIZE, 1400).
+
 -define(WHOLE, -1:32/signed).
--define(SPLIT, -2:32/signed).
+-define(SPLIT, -2:4/little-signed-integer-unit:8).
 
 -define(A2S_INFO, "T").
 -define(A2S_INFO_STRING, "Source Engine Query").
@@ -31,9 +32,13 @@
 %% the payload.
 -spec read_string(Payload::binary()) -> {[byte()], binary()}.
 read_string(Payload) ->
-    [String, NewPayload] = binary:split(Payload, [<<?STRING_TERMINATION>>], []),
-    io:format("Reading string: ~p~n", [String]),
-    {binary:bin_to_list(String), NewPayload}.
+    Result = binary:split(Payload, [<<?STRING_TERMINATION>>], []),
+    case Result of
+        [String, NewPayload] -> {binary:bin_to_list(String), NewPayload};
+        % Handle the edge case with a string
+        % being the last thing in the payload.
+        [String] -> {binary:bin_to_list(String), <<>>}
+    end.
 
 %% parse the packet header and
 %% forward the payload to the
@@ -88,16 +93,16 @@ parse_packet(Packet) when is_binary(Packet) ->
         %% Matches: Rules in multiple packets
         <<
             ?SPLIT,
-            ID:2/little-signed-integer-unit:8,
+            ID:4/little-signed-integer-unit:8,
             Total:8,
             Number:8,
             Size:2/little-signed-integer-unit:8,
-
+            ?WHOLE,
             ?A2S_RULES_REPLY,
             Rules:2/little-signed-integer-unit:8,
             Payload/binary
         >> ->
-            io:format("~p~n~p~n~p~n~p~n", [ID, Total, Number, Size]),
+            io:format("ID: ~p~n Total: ~p~n Number: ~p~n Size: ~p~n", [ID, Total, Number, Size]),
             parse_rules_payload(Payload, Rules, #{});
 
         X->
@@ -158,6 +163,8 @@ parse_player_payload(Payload, Number, State) when Number > 0 ->
 
 -spec parse_rules_payload(binary(), number(), #{}) -> #{}.
 parse_rules_payload(_Payload, 0, State) ->
+    State;
+parse_rules_payload(<<>>, _Number, State) ->
     State;
 parse_rules_payload(Payload, Number, State) when Number > 0 ->
     {Name, Payload1} = read_string(Payload),
