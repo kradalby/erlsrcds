@@ -1,5 +1,5 @@
 {application, 'erlsrcds',
- [{description, "Server query library for SRCDS"},
+ [{description, "Source Dedicated server query library for Erlang"},
   {vsn, "0.0.1"},
   {registered, [erlsrcds]},
   {applications,
