@@ -213,66 +213,87 @@ create_request_package(rules, Challenge) ->
         ?STRING_TERMINATION
     >>.
 
--spec info(byte(), number()) -> #{}.
+-spec info(byte(), number()) -> #{}|{'error','timout'}.
 info(Address, Port) ->
     {ok, AddressTuple} = inet_parse:address(Address),
     info_internal(AddressTuple, Port).
 
--spec info_internal({number(),number(),number(),number()}, number()) -> #{}.
+-spec info_internal({number(),number(),number(),number()}, number()) -> #{}|{'error','timout'}.
 info_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(info),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
-    parse_packet(Packet).
+    case gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT) of
+        {ok, {_Address, _Port, Packet}} ->
+            parse_packet(Packet);
+        {error, timeout} ->
+            {error, timeout}
+    end.
 
--spec player(byte(), number()) -> #{}.
+-spec player(byte(), number()) -> #{}|{'error','timout'}.
 player(Address, Port) ->
     {ok, AddressTuple} = inet_parse:address(Address),
     player_internal(AddressTuple, Port).
 
--spec player_internal({number(),number(),number(),number()}, number()) -> #{}.
+-spec player_internal({number(),number(),number(),number()}, number()) -> #{}|{'error','timout'}.
 player_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(player),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
-    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
-    Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
-    ChallengePayload = create_request_package(player, Challenge),
-    ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
-    parse_packet(Packet).
+    case gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT) of
+        {ok, {_Address, _Port, ChallengePacket}} ->
+            Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
+            ChallengePayload = create_request_package(player, Challenge),
+            ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
+            {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
+            parse_packet(Packet);
+        {error, timout} ->
+            {error, timeout}
+    end.
 
--spec rules(byte(), number()) -> #{}.
+
+-spec rules(byte(), number()) -> #{}|{'error','timout'}.
 rules(Address, Port) ->
     {ok, AddressTuple} = inet_parse:address(Address),
     rules_internal(AddressTuple, Port).
 
--spec rules_internal({number(),number(),number(),number()}, number()) -> #{}.
+-spec rules_internal({number(),number(),number(),number()}, number()) -> #{}|{'error','timout'}.
 rules_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(rules),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
-    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
-    Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
-    ChallengePayload = create_request_package(rules, Challenge),
-    ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
-    case check_for_split_package(Packet) of
-        0 -> parse_packet(Packet);
-        N ->
-            Map = parse_packet(strip_split_packet_header(Packet)),
-            receive_and_parse_split_rules(N-1, Socket, Map)
+    case gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT) of
+        {ok, {_Address, _Port, ChallengePacket}} ->
+            Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
+            ChallengePayload = create_request_package(rules, Challenge),
+            ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
+            case gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT) of
+                {ok, {_Address, _Port, Packet}} ->
+                    case check_for_split_package(Packet) of
+                        0 -> parse_packet(Packet);
+                        N ->
+                            Map = parse_packet(strip_split_packet_header(Packet)),
+                            receive_and_parse_split_rules(N-1, Socket, Map)
+                    end;
+                {error, timeout} ->
+                    {error, timeout}
+            end;
+        {error, timeout} ->
+            {error, timeout}
     end.
 
--spec receive_and_parse_split_rules(number(), any(), #{}) -> #{}.
+-spec receive_and_parse_split_rules(number(), any(), #{}) -> #{}|{'error','timout'}.
 receive_and_parse_split_rules(0, _Socket, State) -> State;
 receive_and_parse_split_rules(Number, Socket, State) ->
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
-    StrippedPacket = strip_split_packet_header(Packet),
-    % Not optimal, but works, the match with an empty binary
-    % will happen before a 1000 recursive calls.
-    % Valve does not include a proper Rules header on other
-    % packages than the first one?
-    NewState = maps:merge(State, parse_rules_payload(StrippedPacket, 1000, #{})),
-    receive_and_parse_split_rules(Number - 1, Socket, NewState).
+    case gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT) of
+        {ok, {_Address, _Port, Packet}} ->
+            StrippedPacket = strip_split_packet_header(Packet),
+            % Not optimal, but works, the match with an empty binary
+            % will happen before a 1000 recursive calls.
+            % Valve does not include a proper Rules header on other
+            % packages than the first one?
+            NewState = maps:merge(State, parse_rules_payload(StrippedPacket, 1000, #{})),
+            receive_and_parse_split_rules(Number - 1, Socket, NewState);
+        {error, timeout} ->
+            {error, timeout}
+    end.
