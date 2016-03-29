@@ -1,0 +1,6 @@
+-sname erlsrcds
+
+-setcookie erlsrcds_cookie
+
++K true
++A30

@@ -1,0 +1,15 @@
+{application, 'erlsrcds',
+ [{description, "Server query library for SRCDS"},
+  {vsn, "0.0.1"},
+  {registered, [erlsrcds]},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {contributors, ["Kristoffer Dalby"]},
+  {licenses, ["MIT"]},
+  {links, ["Github", "https://github.com/kradalby/erlsrcds"]}
+ ]}.
