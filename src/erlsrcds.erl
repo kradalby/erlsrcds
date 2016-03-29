@@ -71,7 +71,7 @@ parse_packet(Packet) when is_binary(Packet) ->
             Rules:2/little-signed-integer-unit:8,
             Payload/binary
         >> ->
-            io:format("~s: ~s~n", [Rules, Payload]);
+            parse_rules_payload(Payload, Rules, #{});
 
         X->
             io:format("Wildcard got this: ~p~n", [X])
@@ -128,6 +128,15 @@ parse_player_payload(Payload, Number, State) when Number > 0 ->
         "time" => Duration
     },
     parse_player_payload(Payload4, Number - 1, [Player|State]).
+
+-spec parse_rules_payload(binary(), number(), #{}) -> #{}.
+parse_rules_payload(_Payload, 0, State) ->
+    State;
+parse_rules_payload(Payload, Number, State) when Number > 0 ->
+    {Name, Payload1} = read_string(Payload),
+    {Value, Payload2} = read_string(Payload1),
+    NewState = maps:put(Name, Value, State),
+    parse_rules_payload(Payload2, Number - 1, NewState).
 
 -spec create_request_package('info' | 'player' | 'rules') -> binary().
 create_request_package(info) ->
