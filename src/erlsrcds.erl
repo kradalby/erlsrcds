@@ -260,7 +260,6 @@ rules_internal(Address = {_,_,_,_}, Port) ->
     case check_for_split_package(Packet) of
         0 -> parse_packet(Packet);
         N ->
-            io:format("There is: ~p packages~n", [N]),
             Map = parse_packet(strip_split_packet_header(Packet)),
             receive_and_parse_split_rules(N-1, Socket, Map)
     end.
@@ -269,9 +268,7 @@ rules_internal(Address = {_,_,_,_}, Port) ->
 receive_and_parse_split_rules(0, _Socket, State) -> State;
 receive_and_parse_split_rules(Number, Socket, State) ->
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
-    io:format("Received: ~s~n", [Packet]),
     StrippedPacket = strip_split_packet_header(Packet),
-    io:format("Stripped: ~s~n", [StrippedPacket]),
     % Not optimal, but works, the match with an empty binary
     % will happen before a 1000 recursive calls.
     % Valve does not include a proper Rules header on other
