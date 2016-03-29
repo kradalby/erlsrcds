@@ -67,7 +67,7 @@ parse_packet(Packet) when is_binary(Packet) ->
 
         <<
             ?WHOLE,
-            ?A2S_PLAYER_REPLY,
+            ?A2S_RULES_REPLY,
             Rules:2/little-signed-integer-unit:8,
             Payload/binary
         >> ->
@@ -210,7 +210,7 @@ rules_internal(Address = {_,_,_,_}, Port) ->
     ok = gen_udp:send(Socket, Address, Port, Payload),
     {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
     Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
-    ChallengePayload = create_request_package(player, Challenge),
+    ChallengePayload = create_request_package(rules, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
     parse_packet(Packet).
