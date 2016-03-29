@@ -2,7 +2,8 @@
 
 -export([
     info/2,
-    player/2
+    player/2,
+    rules/2
 ]).
 
 -define(PACKETSIZE, 1400).
@@ -184,5 +185,18 @@ player_internal(Address = {_,_,_,_}, Port) ->
     io:format("Challenge: ~p~n", [Challenge]),
     ChallengePayload = create_request_package(player, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
+    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    parse_packet(Packet).
+
+-spec rules(byte(), number()) -> #{}.
+rules(Address, Port) ->
+    {ok, AddressTuple} = inet_parse:address(Address),
+    rules_internal(AddressTuple, Port).
+
+-spec rules_internal({number(),number(),number(),number()}, number()) -> #{}.
+rules_internal(Address = {_,_,_,_}, Port) ->
+    Payload = create_request_package(rules),
+    {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
+    ok = gen_udp:send(Socket, Address, Port, Payload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
     parse_packet(Packet).
