@@ -53,7 +53,7 @@ parse_packet(Packet) when is_binary(Packet) ->
             ?WHOLE,
             ?S2C_CHALLENGE,
             Challenge:32/signed,
-            Payload/binary
+            _Payload/binary
         >> ->
             #{"Challenge" => Challenge};
 
