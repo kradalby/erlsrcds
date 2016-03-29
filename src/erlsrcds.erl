@@ -65,6 +65,14 @@ parse_packet(Packet) when is_binary(Packet) ->
         >> ->
             parse_player_payload(Payload, Players, []);
 
+        <<
+            ?WHOLE,
+            ?A2S_PLAYER_REPLY,
+            Rules:2/little-signed-integer-unit:8,
+            Payload/binary
+        >> ->
+            io:format("~s: ~s~n", [Rules, Payload]);
+
         X->
             io:format("Wildcard got this: ~p~n", [X])
     end.
@@ -144,11 +152,18 @@ create_request_package(rules) ->
         ?STRING_TERMINATION
     >>.
 
--spec create_request_package('player', integer()) -> binary().
+-spec create_request_package('player' | 'rules', integer()) -> binary().
 create_request_package(player, Challenge) ->
     <<
         ?CHALLENGE,
         ?A2S_PLAYER,
+        Challenge:32,
+        ?STRING_TERMINATION
+    >>;
+create_request_package(rules, Challenge) ->
+    <<
+        ?CHALLENGE,
+        ?A2S_RULES,
         Challenge:32,
         ?STRING_TERMINATION
     >>.
@@ -193,5 +208,9 @@ rules_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(rules),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
+    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
+    ChallengePayload = create_request_package(player, Challenge),
+    ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
     parse_packet(Packet).
