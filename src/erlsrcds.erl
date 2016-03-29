@@ -107,8 +107,8 @@ parse_info_payload(Payload) when is_binary(Payload) ->
         _ -> Result
     end.
 
--spec parse_player_payload(binary(), number(), []) -> [].
-parse_player_payload(Payload, 0, State) ->
+-spec parse_player_payload(binary(), number(), [#{}]) -> [].
+parse_player_payload(_Payload, 0, State) ->
     State;
 parse_player_payload(Payload, Number, State) when Number > 0 ->
     <<Index:8, Payload1/binary>> = Payload,
