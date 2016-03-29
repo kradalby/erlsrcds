@@ -47,7 +47,6 @@ parse_packet(Packet) when is_binary(Packet) ->
             _Protocol:8,
             Payload/binary
         >> ->
-            io:format("Correct: ~p~n", [Payload]),
             parse_info_payload(Payload);
 
         <<
@@ -56,8 +55,6 @@ parse_packet(Packet) when is_binary(Packet) ->
             Challenge:32/signed,
             Payload/binary
         >> ->
-            io:format("Got PLAYER challenge~n"),
-            io:format("~p~n", [Payload]),
             #{"Challenge" => Challenge};
 
         <<
@@ -180,9 +177,7 @@ player_internal(Address = {_,_,_,_}, Port) ->
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
     {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
-    io:format("~p~n", [ChallengePacket]),
     Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
-    io:format("Challenge: ~p~n", [Challenge]),
     ChallengePayload = create_request_package(player, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
     {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
