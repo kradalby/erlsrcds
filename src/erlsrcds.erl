@@ -6,6 +6,7 @@
     rules/2
 ]).
 
+-define(TIMEOUT, 1000).
 -define(PACKETSIZE, 1400).
 
 -define(WHOLE, -1:32/signed).
@@ -222,7 +223,7 @@ info_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(info),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
     parse_packet(Packet).
 
 -spec player(byte(), number()) -> #{}.
@@ -235,11 +236,11 @@ player_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(player),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
-    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
     Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
     ChallengePayload = create_request_package(player, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
     parse_packet(Packet).
 
 -spec rules(byte(), number()) -> #{}.
@@ -252,11 +253,11 @@ rules_internal(Address = {_,_,_,_}, Port) ->
     Payload = create_request_package(rules),
     {ok, Socket} = gen_udp:open(0, ?UDP_OPTS),
     ok = gen_udp:send(Socket, Address, Port, Payload),
-    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    {ok, {_Address, _Port, ChallengePacket}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
     Challenge = maps:get("Challenge", parse_packet(ChallengePacket)),
     ChallengePayload = create_request_package(rules, Challenge),
     ok = gen_udp:send(Socket, Address, Port, ChallengePayload),
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
     case check_for_split_package(Packet) of
         0 -> parse_packet(Packet);
         N ->
@@ -267,7 +268,7 @@ rules_internal(Address = {_,_,_,_}, Port) ->
 -spec receive_and_parse_split_rules(number(), any(), #{}) -> #{}.
 receive_and_parse_split_rules(0, _Socket, State) -> State;
 receive_and_parse_split_rules(Number, Socket, State) ->
-    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE),
+    {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, ?PACKETSIZE, ?TIMEOUT),
     StrippedPacket = strip_split_packet_header(Packet),
     % Not optimal, but works, the match with an empty binary
     % will happen before a 1000 recursive calls.
