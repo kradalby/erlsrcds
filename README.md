@@ -1,4 +1,6 @@
 # erlsrcds
+[![Build Status](https://drone.fap.no/api/badges/kradalby/erlsrcds/status.svg)](https://drone.fap.no/kradalby/erlsrcds)
+
 Library for performing server queries towards Source Dedicated Servers.
 
 The library is implemented based on the information given here: [Server queries](https://developer.valvesoftware.com/wiki/Server_queries). Note that it is implemented with Counter-Strike and Team Fortress 2 in mind, so I am not sure about non-valve Source enginge games.
