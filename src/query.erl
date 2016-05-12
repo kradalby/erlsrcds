@@ -29,18 +29,6 @@
     {active, false}
 ]).
 
-%% Read the and return the next string from
-%% the payload.
--spec read_string(Payload::binary()) -> {[byte()], binary()}.
-read_string(Payload) ->
-    Result = binary:split(Payload, [<<?STRING_TERMINATION>>], []),
-    case Result of
-        [String, NewPayload] -> {binary:bin_to_list(String), NewPayload};
-        % Handle the edge case with a string
-        % being the last thing in the payload.
-        [String] -> {binary:bin_to_list(String), <<>>}
-    end.
-
 %% parse the packet header and
 %% forward the payload to the
 %% correct parse function.
@@ -113,10 +101,10 @@ strip_split_packet_header(Packet) ->
 
 -spec parse_info_payload(Payload::binary()) -> #{}.
 parse_info_payload(Payload) when is_binary(Payload) ->
-    {Name, Payload1} = read_string(Payload),
-    {Map, Payload2} = read_string(Payload1),
-    {Folder, Payload3} = read_string(Payload2),
-    {Game, Payload4} = read_string(Payload3),
+    {Name, Payload1} = common:read_string(Payload),
+    {Map, Payload2} = common:read_string(Payload1),
+    {Folder, Payload3} = common:read_string(Payload2),
+    {Game, Payload4} = common:read_string(Payload3),
     Result = maps:put("hostname", Name,
              maps:put("map", Map,
              maps:put("gamedir", Folder,
@@ -152,7 +140,7 @@ parse_player_payload(_Payload, 0, State) ->
     State;
 parse_player_payload(Payload, Number, State) when Number > 0 ->
     <<Index:8, Payload1/binary>> = Payload,
-    {Name, Payload2} = read_string(Payload1),
+    {Name, Payload2} = common:read_string(Payload1),
     <<Score:4/little-signed-integer-unit:8, Payload3/binary>> = Payload2,
     <<Duration:4/little-signed-float-unit:8, Payload4/binary>> = Payload3,
     Player = #{
@@ -169,8 +157,8 @@ parse_rules_payload(_Payload, 0, State) ->
 parse_rules_payload(<<>>, _Number, State) ->
     State;
 parse_rules_payload(Payload, Number, State) when Number > 0 ->
-    {Name, Payload1} = read_string(Payload),
-    {Value, Payload2} = read_string(Payload1),
+    {Name, Payload1} = common:read_string(Payload),
+    {Value, Payload2} = common:read_string(Payload1),
     NewState = maps:put(Name, Value, State),
     parse_rules_payload(Payload2, Number - 1, NewState).
 
