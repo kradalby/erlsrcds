@@ -1,4 +1,4 @@
--module(common).
+-module(erlsrcds_common).
 
 -export([
          read_string/1
