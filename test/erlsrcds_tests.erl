@@ -20,7 +20,7 @@ rules_timeout_test() ->
     ?assertEqual({error, timeout}, Result).
 
 info_query_test() ->
-    Address = "193.202.115.85",
+    Address = "193.202.115.82",
     Port = 27115,
     Result = erlsrcds:info(Address, Port),
     Hostname = "Recess.no #12 Surf [ Tier 1-2 | Timer | 100 Tick ]",
@@ -28,7 +28,7 @@ info_query_test() ->
     ?assertEqual(Hostname, FetchedHostname).
 
 rules_query_test() ->
-    Address = "193.202.115.85",
+    Address = "193.202.115.82",
     Port = 27115,
     Result = erlsrcds:rules(Address, Port),
     Key = "sv_pausable",
