@@ -86,3 +86,18 @@ To fetch rules from the server:
           [...] => [...],...}
 
 The rules are returned as a map.
+
+### RCON
+The library implements a _very_ simple RCON interface.
+
+This interface miss a lot of error handling, and it does not support split packages. This means that you can basically set and get small parameters, but not get log or status. For status, use info.
+
+
+    1> erlsrcds:rcon("sv_gravity", "passwrd", "127.0.0.1", 27015).
+    "\"sv_gravity\" = \"200\" ( def. \"800\" ) game notify replicated       - World gravity.\n"
+    2> erlsrcds:rcon("sv_gravity 800", "passwrd", "127.0.0.1", 27015).
+    []
+    3> erlsrcds:rcon("sv_gravity", "passwrd", "127.0.0.1", 27015).
+    "\"sv_gravity\" = \"800\" game notify replicated                  - World gravity.\n"
+
+The return value is the return value from the server as a string.
