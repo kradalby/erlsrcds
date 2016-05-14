@@ -1,3 +1,7 @@
+## Quickcheck
+.eqc-info
+current_counterexample.eqc
+
 
 # Created by https://www.gitignore.io/api/vim,linux,osx,erlang
 
