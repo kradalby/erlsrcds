@@ -8,6 +8,8 @@ The library is implemented based on the information given here: [Server queries]
 This project was created for educational purposes, but should function properly.
 If there are parts of the code which has not optimal implementations, please let me know :). I have tested it on Counter-Strike: Global Offensive and Counter-Strike: Source.
 
+This project was a part of my final project in Analysis of Concurrent Systems at Universidad Politécnica de Madrid. The presentation can be found [here](https://kradalby.no/presentations/upm/erlang/final/#1).
+
 ## Usage
 The library allows you to query a server and get information back in form of a map or a list.
 
