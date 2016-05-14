@@ -6,7 +6,7 @@
          rules_internal/2
 ]).
 
--define(TIMEOUT, 1000).
+-define(TIMEOUT, 3000).
 -define(PACKETSIZE, 1400).
 
 -define(WHOLE, -1:32/signed).
