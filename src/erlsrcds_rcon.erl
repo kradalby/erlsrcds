@@ -1,7 +1,8 @@
 -module(erlsrcds_rcon).
 
 -export([
-         rcon/4
+         rcon/4,
+         get_value_from_command_result/1
 ]).
 
 -define(TIMEOUT, 1000).
@@ -107,3 +108,12 @@ rcon(Command, Password, Address, Port) ->
     end,
     gen_tcp:close(Socket),
     maps:get("body", Result).
+
+get_value_from_command_result(Result) ->
+    case re:run(Result, "^.*= \\\"(?<value>\\w+)\\\"", [{capture, ['value'], list}]) of
+        {match, [Return]} ->
+            Return;
+        nomatch ->
+            nomatch
+    end.
+          

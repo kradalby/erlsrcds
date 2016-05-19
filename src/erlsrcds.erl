@@ -4,7 +4,8 @@
     info/2,
     player/2,
     rules/2,
-    rcon/4
+    rcon/4,
+    parse_rcon/1
 ]).
 
 
@@ -27,4 +28,5 @@ rcon(Command, Password, Address, Port) ->
     {ok, AddressTuple} = inet_parse:address(Address),
     erlsrcds_rcon:rcon(Command, Password, AddressTuple, Port).
 
-
+parse_rcon(Result) ->
+    erlsrcds_rcon:get_value_from_command_result(Result).
