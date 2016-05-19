@@ -26,3 +26,5 @@ rules(Address, Port) ->
 rcon(Command, Password, Address, Port) ->
     {ok, AddressTuple} = inet_parse:address(Address),
     erlsrcds_rcon:rcon(Command, Password, AddressTuple, Port).
+
+
