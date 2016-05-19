@@ -1,4 +1,4 @@
--module(erlsrcds_qc_tests).
+-module(erlsrcds_qc_state).
 
 -compile(export_all).
 
@@ -17,28 +17,24 @@
 
 rules_generator() ->
     Commands = #{
-      "sv_gravity" => lists:seq(100, 800),
-      "sv_cheats" => [0, 1],
-      "mp_timelimit" => lists:seq(5, 100),
-      "mp_startmoney" => lists:seq(800, 16000),
-      "mp_c4timer" => lists:seq(10, 90),
-      "mp_freezetime" => lists:seq(0, 13),
-      "mp_flashlight" => [0, 1],
-      "sv_waterfriction" => [0, 1],
-      "sv_airaccelerate" => lists:seq(100, 1000),
-      "sv_enablebunnyhopping" => [0, 1],
-      "sv_maxspeed" => lists:seq(100, 1000)
+      "sv_gravity" => choose(100, 800),
+      "sv_cheats" => choose(0, 1),
+      "mp_timelimit" => choose(5, 100),
+      "mp_startmoney" => choose(800, 16000),
+      "mp_c4timer" => choose(10, 90),
+      "mp_freezetime" => choose(0, 13),
+      "mp_flashlight" => choose(0, 1),
+      "sv_waterfriction" => choose(0, 1),
+      "sv_airaccelerate" => choose(100, 1000),
+      "sv_enablebunnyhopping" => choose(0, 1),
+      "sv_maxspeed" => choose(100, 1000)
      },
     ?LET(
        Command,
        oneof(maps:keys(Commands)),
          [
-          Command,
-          ?LET(
-             Value,
-             oneof(maps:get(Command, Commands)),
-             integer_to_list(Value)
-            )
+          Command, 
+          maps:get(Command, Commands)
          ]
       ).
             
@@ -55,7 +51,7 @@ change_rules_args(_State) ->
     rules_generator().
 
 change_rules(Rule, Value) ->
-    Command = string:concat(Rule, string:concat(" ", Value)),
+    Command = string:concat(Rule, string:concat(" ", integer_to_list(Value))),
     erlsrcds:rcon(Command, ?PASSWORD, ?SERVER, ?PORT).
 
 change_rules_next(State = #state{rules=Rules}, _Return, [Rule, Value]) ->
@@ -118,6 +114,14 @@ sample() ->
     eqc_gen:sample(eqc_statem:commands(?MODULE)).
 
 
+prop_p1() ->
+    ?FORALL(Cmds,parallel_commands(?MODULE),
+            begin
+                {H,S,Res} = run_parallel_commands(?MODULE,Cmds),
+                pretty_commands(?MODULE, Cmds, {H, S, Res},
+                                Res == ok)
+            end).
+
 prop_s1() ->
     ?FORALL(Cmds,commands(?MODULE),
             begin
@@ -128,3 +132,6 @@ prop_s1() ->
 
 eqc() ->
     eqc:quickcheck(?MODULE:prop_s1()).
+
+eqcp() ->
+    eqc:quickcheck(?MODULE:prop_p1()).
