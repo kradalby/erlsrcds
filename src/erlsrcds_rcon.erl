@@ -17,8 +17,8 @@
 
 -define(MAX_COMMAND_LENGTH, 510).
 
--define(MIN_MESSAGE_LENGTH, 4+4+1+1).
--define(MAX_MESSAGE_LENGTH, 4+4+4096+1).
+-define(MIN_MESSAGE_LENGTH, 4 + 4 + 1 + 1).
+-define(MAX_MESSAGE_LENGTH, 4 + 4 + 4096 + 1).
 
 -define(TCP_OPTS, [
                    binary,
