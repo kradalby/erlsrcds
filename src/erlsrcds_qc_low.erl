@@ -14,4 +14,32 @@
 }).
 
 initial_state() ->
-    #state{}.
+    closed.
+
+closed(State) ->
+    [{listen, {}}].
+
+listen(State) ->
+    [{auth_sent, {}}].
+
+auth_sent(State) ->
+    [{auth_resp_recv, {}}].
+
+auth_resp_recv(State) ->
+    [
+     {established, {}},
+     {closed, {}}
+    ].
+
+established(State) ->
+    [
+     {command_sent, {}},
+     {closed, {}}
+    ].
+
+command_sent(State) ->
+    [{command_resp_recv, {}}].
+
+command_resp_recv(State) ->
+    [{closed, {}}].
+
