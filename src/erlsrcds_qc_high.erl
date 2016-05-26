@@ -1,4 +1,4 @@
--module(erlsrcds_qc_state).
+-module(erlsrcds_qc_high).
 
 -compile(export_all).
 
@@ -33,14 +33,14 @@ rules_generator() ->
        Command,
        oneof(maps:keys(Commands)),
          [
-          Command, 
+          Command,
           ?LET(
-             Value, 
+             Value,
              maps:get(Command, Commands),
              integer_to_list(Value)
          )]
       ).
-            
+
 maps_generator() ->
       oneof(["de_dust2", "cs_office", "cs_italy", "de_nuke", "de_inferno"]).
 
@@ -92,18 +92,18 @@ changelevel(Map) ->
     Command = string:concat("changelevel ", Map),
     erlsrcds:rcon(Command, ?PASSWORD, ?SERVER, ?PORT).
 
-changelevel_next(_State, _Args, [Map]) -> 
+changelevel_next(_State, _Args, [Map]) ->
     #state{rules=#{}, map=Map}.
 
 
 checklevel_pre(#state{map = Map}) ->
     length(Map) > 0.
-    
+
 checklevel_args(_State) ->
     [].
 
 checklevel() ->
-    erlsrcds:info(?SERVER, ?PORT).    
+    erlsrcds:info(?SERVER, ?PORT).
 
 checklevel_post(#state{map = Map}, [], Return) ->
     case Return of
@@ -111,7 +111,7 @@ checklevel_post(#state{map = Map}, [], Return) ->
             % io:format("UDP timeout changelevel~n"),
             true;
         _ ->
-            % io:format("changelevel succ~n"),    
+            % io:format("changelevel succ~n"),
             Map == maps:get("map", Return)
     end.
 
@@ -141,11 +141,11 @@ prop_p1() ->
               aggregate(command_names(Cmds),
                         Res == ok))
           end).
- 
+
 eqcp() ->
     eqc:quickcheck(?MODULE:prop_p1()).
 
-eqcp_n(N) -> 
+eqcp_n(N) ->
     eqc:quickcheck(eqc:numtests(N, erlsrcds_qc_state:prop_p1())).
 
 prop_s1() ->
@@ -160,5 +160,5 @@ prop_s1() ->
 eqc() ->
     eqc:quickcheck(?MODULE:prop_s1()).
 
-eqc_n(N) -> 
+eqc_n(N) ->
     eqc:quickcheck(eqc:numtests(N, erlsrcds_qc_state:prop_s1())).
