@@ -110,7 +110,7 @@ rcon(Command, Password, Address, Port) ->
     maps:get("body", Result).
 
 get_value_from_command_result(Result) ->
-    case re:run(Result, "^.*= \\\"(?<value>\\w+)\\\"", [{capture, ['value'], list}]) of
+    case re:run(Result, "^.*= \\\"(?<value>-*\\w+)\\\"", [{capture, ['value'], list}]) of
         {match, [Return]} ->
             Return;
         nomatch ->
